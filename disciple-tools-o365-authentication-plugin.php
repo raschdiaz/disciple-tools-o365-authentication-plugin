@@ -83,6 +83,8 @@ function dt_o365_authentication_plugin()
 }
 add_action('after_setup_theme', 'dt_o365_authentication_plugin');
 
+add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'));
+
 /**
  * Singleton class for setting up the plugin.
  *
@@ -276,12 +278,41 @@ class DT_O365_Authentication_Plugin
 
         $settings = [
             "client_id" => "",
-			"client_secret" => "",
-			"scopes" => "user.read"
+            "client_secret" => "",
+            "scopes" => "user.read",
+            "redirect_uri" => wp_login_url(),
+            "client_uri" => "https://login.live.com/oauth20_authorize.srf"
         ];
 
         add_option('dt_o365_settings', json_encode($settings));
     }
+
+    public function render_login_button()
+    {
+
+        $settings = json_decode(get_option('dt_o365_settings'));
+
+        if(!empty($settings->client_id)) {
+
+            ?>
+                <a class="loginLink" href="<?php echo $settings->client_uri."?client_id=".$settings->client_id."&scope=".$settings->scopes."&response_type=code&redirect_uri=".$settings->redirect_uri; ?>"></a>
+                <style>
+                    .loginLink {
+                        background-image: none,url(<?php echo plugin_dir_url(__FILE__) . '0365_login_link.svg'; ?>);
+                        background-repeat: no-repeat;
+                        display: block;
+                        margin-left: auto;
+                        margin-right: auto;
+                        margin-top: 30px;
+                        width: 215px;
+                        height: 41px;
+                    }
+                </style>
+            <?php
+
+        }
+
+}
 
     /**
      * Method that runs only when the plugin is deactivated.
