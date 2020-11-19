@@ -83,7 +83,51 @@ function dt_o365_authentication_plugin()
 }
 add_action('after_setup_theme', 'dt_o365_authentication_plugin');
 
-add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'));
+add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'), 20, 3);
+
+// DETECT USER LOG IN O365
+if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365_authentication") {
+    //echo print_r($_GET);
+    $settings = json_decode(get_option('dt_o365_settings'));
+    //echo "</br>";
+    //echo print_r($settings);
+
+    $fields = array("client_id" => $settings->client_id, "redirect_uri" => $settings->redirect_uri, "client_secret" => $settings->client_secret, "code" => $_GET["code"], "grant_type" => "authorization_code");
+    //echo "</br>";
+    //echo print_r($fields);
+    $fields_string = "";
+    foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
+    rtrim($fields_string, "&");
+    //echo "</br>";
+    //echo print_r($fields_string);
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => $settings->token_uri,
+        CURLOPT_HTTPHEADER => array("Content-Type: application/x-www-form-urlencoded"),
+        CURLOPT_POST => count($fields),
+        CURLOPT_POSTFIELDS => $fields_string,
+        CURLOPT_RETURNTRANSFER => true,
+    ));
+
+    $result = curl_exec($curl);
+    echo "</br>";
+    
+    $return = array();
+    if ($result->error) {
+        $return['error'] = curl_error($curl);
+    } else {
+        $return['success'] = json_decode($result);
+    }
+
+    curl_close($curl);
+    
+    if (isset($return['success'])) {
+        echo print_r($return['success']);
+    } else if (isset($return['error'])) {
+        // MOSTRAR MENSAJE DE ERROR
+        echo print_r($return['error']);
+    }
+}
 
 /**
  * Singleton class for setting up the plugin.
@@ -115,7 +159,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return object
      */
-    public static function get_instance()
+    function get_instance()
     {
 
         static $instance = null;
@@ -136,7 +180,7 @@ class DT_O365_Authentication_Plugin
      * @access private
      * @return void
      */
-    private function __construct()
+    function __construct()
     {
     }
 
@@ -147,7 +191,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    private function includes()
+    function includes()
     {
         if (is_admin()) {
             require_once 'includes/admin/admin-menu-and-tabs.php';
@@ -161,7 +205,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    private function setup()
+    function setup()
     {
 
         // Main plugin directory path and URI.
@@ -195,7 +239,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    private function setup_actions()
+    function setup_actions()
     {
 
         if (is_admin()) {
@@ -246,7 +290,7 @@ class DT_O365_Authentication_Plugin
      * @param   string      $status                 Status of the plugin
      * @return  array       $links_array
      */
-    public function plugin_description_links($links_array, $plugin_file_name, $plugin_data, $status)
+    function plugin_description_links($links_array, $plugin_file_name, $plugin_data, $status)
     {
         if (strpos($plugin_file_name, basename(__FILE__))) {
             // You can still use `array_unshift()` to add links at the beginning.
@@ -266,7 +310,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    public static function activation()
+    function activation()
     {
 
         // Confirm 'Administrator' has 'manage_dt' privilege. This is key in 'remote' configuration when
@@ -281,21 +325,19 @@ class DT_O365_Authentication_Plugin
             "client_secret" => "",
             "scopes" => "user.read",
             "redirect_uri" => wp_login_url(),
-            "client_uri" => "https://login.live.com/oauth20_authorize.srf"
+            "authorize_uri" => "https://login.live.com/oauth20_authorize.srf",
+            "token_uri" => "https://login.live.com/oauth20_token.srf",
         ];
 
         add_option('dt_o365_settings', json_encode($settings));
     }
 
-    public function render_login_button()
+    function render_login_button()
     {
-
         $settings = json_decode(get_option('dt_o365_settings'));
-
-        if(!empty($settings->client_id)) {
-
+        if (!empty($settings->client_id)) {
             ?>
-                <a class="loginLink" href="<?php echo $settings->client_uri."?client_id=".$settings->client_id."&scope=".$settings->scopes."&response_type=code&redirect_uri=".$settings->redirect_uri; ?>"></a>
+                <a class="loginLink" href="<?php echo $settings->authorize_uri . "?client_id=" . $settings->client_id . "&scope=" . $settings->scopes . "&response_type=code&redirect_uri=" . $settings->redirect_uri . "&state=dt_o365_authentication"; ?>"></a>
                 <style>
                     .loginLink {
                         background-image: none,url(<?php echo plugin_dir_url(__FILE__) . '0365_login_link.svg'; ?>);
@@ -309,10 +351,8 @@ class DT_O365_Authentication_Plugin
                     }
                 </style>
             <?php
-
-        }
-
 }
+    }
 
     /**
      * Method that runs only when the plugin is deactivated.
@@ -321,7 +361,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    public static function deactivation()
+    function deactivation()
     {
         delete_option('dismissed-dt-o365-authentication');
         delete_option('dt_o365_settings');
@@ -334,7 +374,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    public function i18n()
+    function i18n()
     {
         load_plugin_textdomain('dt_o365_authentication_plugin', false, trailingslashit(dirname(plugin_basename(__FILE__))) . 'languages');
     }
@@ -346,7 +386,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return string
      */
-    public function __toString()
+    function __toString()
     {
         return 'dt_o365_authentication_plugin';
     }
@@ -358,7 +398,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    public function __clone()
+    function __clone()
     {
         _doing_it_wrong(__FUNCTION__, 'Whoah, partner!', '0.1');
     }
@@ -370,7 +410,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    public function __wakeup()
+    function __wakeup()
     {
         _doing_it_wrong(__FUNCTION__, 'Whoah, partner!', '0.1');
     }
@@ -384,7 +424,7 @@ class DT_O365_Authentication_Plugin
      * @since  0.1
      * @access public
      */
-    public function __call($method = '', $args = array())
+    function __call($method = '', $args = array())
     {
         _doing_it_wrong("dt_o365_authentication_plugin::" . esc_html($method), 'Method does not exist.', '0.1');
         unset($method, $args);
