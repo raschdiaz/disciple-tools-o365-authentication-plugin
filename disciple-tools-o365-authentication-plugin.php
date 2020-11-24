@@ -110,8 +110,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
     ));
 
     $result = curl_exec($curl);
-    echo "</br>";
-    
+
     $return = array();
     if ($result->error) {
         $return['error'] = curl_error($curl);
@@ -120,9 +119,44 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
     }
 
     curl_close($curl);
-    
+
     if (isset($return['success'])) {
         echo print_r($return['success']);
+        echo "</br>";
+        echo "</br>";
+        //echo "</br>".$settings->user_profile_uri;
+
+        //echo "</br>".$return['success']->access_token;
+        // https://graph.microsoft.com/v1.0/me
+
+        $curlProfile = curl_init();
+        curl_setopt_array($curlProfile, array(
+            CURLOPT_URL => $settings->user_profile_uri,
+            CURLOPT_HTTPHEADER => array("Content-Type: application/json", "Authorization: Bearer " . $return['success']->access_token),
+            CURLOPT_RETURNTRANSFER => true,
+        ));
+
+        $resultTwo = curl_exec($curlProfile);
+        
+
+        $returnTwo = array();
+        if ($resultTwo->error) {
+            $returnTwo['error'] = curl_error($curlProfile);
+        } else {
+            $returnTwo['success'] = json_decode($resultTwo);
+        }
+
+        curl_close($curlProfile);
+
+        if (isset($returnTwo['success'])) {
+            $userProfileInfo = $returnTwo['success'];
+            echo print_r($userProfileInfo);
+
+        } else if (isset($returnTwo['error'])) {
+            // MOSTRAR MENSAJE DE ERROR
+            echo print_r($returnTwo['error']);
+        }
+
     } else if (isset($return['error'])) {
         // MOSTRAR MENSAJE DE ERROR
         echo print_r($return['error']);
@@ -159,7 +193,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return object
      */
-    function get_instance()
+    public function get_instance()
     {
 
         static $instance = null;
@@ -180,7 +214,7 @@ class DT_O365_Authentication_Plugin
      * @access private
      * @return void
      */
-    function __construct()
+    public function __construct()
     {
     }
 
@@ -191,7 +225,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function includes()
+    public function includes()
     {
         if (is_admin()) {
             require_once 'includes/admin/admin-menu-and-tabs.php';
@@ -205,7 +239,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function setup()
+    public function setup()
     {
 
         // Main plugin directory path and URI.
@@ -239,7 +273,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function setup_actions()
+    public function setup_actions()
     {
 
         if (is_admin()) {
@@ -290,7 +324,7 @@ class DT_O365_Authentication_Plugin
      * @param   string      $status                 Status of the plugin
      * @return  array       $links_array
      */
-    function plugin_description_links($links_array, $plugin_file_name, $plugin_data, $status)
+    public function plugin_description_links($links_array, $plugin_file_name, $plugin_data, $status)
     {
         if (strpos($plugin_file_name, basename(__FILE__))) {
             // You can still use `array_unshift()` to add links at the beginning.
@@ -310,7 +344,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function activation()
+    public function activation()
     {
 
         // Confirm 'Administrator' has 'manage_dt' privilege. This is key in 'remote' configuration when
@@ -327,12 +361,13 @@ class DT_O365_Authentication_Plugin
             "redirect_uri" => wp_login_url(),
             "authorize_uri" => "https://login.live.com/oauth20_authorize.srf",
             "token_uri" => "https://login.live.com/oauth20_token.srf",
+            "user_profile_uri" => "https://graph.microsoft.com/v1.0/me",
         ];
 
         add_option('dt_o365_settings', json_encode($settings));
     }
 
-    function render_login_button()
+    public function render_login_button()
     {
         $settings = json_decode(get_option('dt_o365_settings'));
         if (!empty($settings->client_id)) {
@@ -361,7 +396,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function deactivation()
+    public function deactivation()
     {
         delete_option('dismissed-dt-o365-authentication');
         delete_option('dt_o365_settings');
@@ -374,7 +409,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function i18n()
+    public function i18n()
     {
         load_plugin_textdomain('dt_o365_authentication_plugin', false, trailingslashit(dirname(plugin_basename(__FILE__))) . 'languages');
     }
@@ -386,7 +421,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return string
      */
-    function __toString()
+    public function __toString()
     {
         return 'dt_o365_authentication_plugin';
     }
@@ -398,7 +433,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function __clone()
+    public function __clone()
     {
         _doing_it_wrong(__FUNCTION__, 'Whoah, partner!', '0.1');
     }
@@ -410,7 +445,7 @@ class DT_O365_Authentication_Plugin
      * @access public
      * @return void
      */
-    function __wakeup()
+    public function __wakeup()
     {
         _doing_it_wrong(__FUNCTION__, 'Whoah, partner!', '0.1');
     }
@@ -424,7 +459,7 @@ class DT_O365_Authentication_Plugin
      * @since  0.1
      * @access public
      */
-    function __call($method = '', $args = array())
+    public function __call($method = '', $args = array())
     {
         _doing_it_wrong("dt_o365_authentication_plugin::" . esc_html($method), 'Method does not exist.', '0.1');
         unset($method, $args);
