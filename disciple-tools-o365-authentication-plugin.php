@@ -87,19 +87,15 @@ add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_
 
 // DETECT USER LOG IN O365
 if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365_authentication") {
-    //echo print_r($_GET);
-    $settings = json_decode(get_option('dt_o365_settings'));
-    //echo "</br>";
-    //echo print_r($settings);
 
+    // ENABLE get_user_by() WORDPRESS FUNCTION
+    include_once ABSPATH . 'wp-includes/pluggable.php';
+    
+    $settings = json_decode(get_option('dt_o365_settings'));
     $fields = array("client_id" => $settings->client_id, "redirect_uri" => $settings->redirect_uri, "client_secret" => $settings->client_secret, "code" => $_GET["code"], "grant_type" => "authorization_code");
-    //echo "</br>";
-    //echo print_r($fields);
     $fields_string = "";
     foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
     rtrim($fields_string, "&");
-    //echo "</br>";
-    //echo print_r($fields_string);
     $curl = curl_init();
     curl_setopt_array($curl, array(
         CURLOPT_URL => $settings->token_uri,
@@ -108,27 +104,15 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
         CURLOPT_POSTFIELDS => $fields_string,
         CURLOPT_RETURNTRANSFER => true,
     ));
-
     $result = curl_exec($curl);
-
     $return = array();
     if ($result->error) {
         $return['error'] = curl_error($curl);
     } else {
         $return['success'] = json_decode($result);
     }
-
     curl_close($curl);
-
     if (isset($return['success'])) {
-        echo print_r($return['success']);
-        echo "</br>";
-        echo "</br>";
-        //echo "</br>".$settings->user_profile_uri;
-
-        //echo "</br>".$return['success']->access_token;
-        // https://graph.microsoft.com/v1.0/me
-
         $curlProfile = curl_init();
         curl_setopt_array($curlProfile, array(
             CURLOPT_URL => $settings->user_profile_uri,
@@ -137,8 +121,6 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
         ));
 
         $resultTwo = curl_exec($curlProfile);
-        
-
         $returnTwo = array();
         if ($resultTwo->error) {
             $returnTwo['error'] = curl_error($curlProfile);
@@ -149,18 +131,54 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
         curl_close($curlProfile);
 
         if (isset($returnTwo['success'])) {
+            // O365 User's Profile Info Retrieved Successfully
             $userProfileInfo = $returnTwo['success'];
-            echo print_r($userProfileInfo);
 
+            // CREATE AND LOGIN USER OR ONLY LOGIN USER
+            if (username_exists($userProfileInfo->userPrincipalName)) {
+                $userInfo = get_user_by('login', $userProfileInfo->userPrincipalName);
+                if (!$userInfo) {
+                    // SHOW ERROR MESSAGE (ERROR USER DOES NOT EXIST IN WORDPRESS)
+                }
+            } else {
+                //$userId = wp_create_user($userProfileInfo->userPrincipalName, wp_generate_password(), $userProfileInfo->userPrincipalName);
+                
+                $userId = wp_insert_user(array(
+                    'user_login' => $userProfileInfo->userPrincipalName,
+                    'user_pass' => wp_generate_password(),
+                    'display_name' => $userProfileInfo->displayName,
+                    'nickname' => $userProfileInfo->userPrincipalName,
+                    'first_name' => $userProfileInfo->givenName,
+                    'last_name' => $userProfileInfo->surname,
+                    'role' => 'multiplier'
+                ));
+                if (is_wp_error($userId)) {
+                    // SHOW ERROR MESSAGE (ERROR CREATING USER $userId->get_error_message())
+                } else {
+                    $userInfo = get_user_by('ID', $userId);
+                    if (!$userInfo) {
+                        // SHOW ERROR MESSAGE (ERROR USER DOES NOT EXIST IN WORDPRESS $userInfo->get_error_message())
+                    }
+                }
+            }
+            if ($userInfo) {
+                // LOG IN USER
+                wp_set_current_user($userInfo->ID, $userInfo->user_login);
+                wp_set_auth_cookie($userInfo->ID);
+                do_action('wp_login', $userInfo->user_login);
+                // REDIRECT USER TO PROTECTED VIEW
+                wp_redirect(site_url());
+            }
         } else if (isset($returnTwo['error'])) {
-            // MOSTRAR MENSAJE DE ERROR
+            // SHOW ERROR MESSAGE (ERROR RETRIEVING O365 USER PROFILE INFO)
             echo print_r($returnTwo['error']);
         }
 
     } else if (isset($return['error'])) {
-        // MOSTRAR MENSAJE DE ERROR
+        // SHOW ERROR MESSAGE (ERROR AUTHENTICATING USER ON O365)
         echo print_r($return['error']);
     }
+    exit();
 }
 
 /**
