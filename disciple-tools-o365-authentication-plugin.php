@@ -92,7 +92,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
     include_once ABSPATH . 'wp-includes/pluggable.php';
     
     $settings = json_decode(get_option('dt_o365_settings'));
-    $fields = array("client_id" => $settings->client_id, "redirect_uri" => $settings->redirect_uri, "client_secret" => $settings->client_secret, "code" => $_GET["code"], "grant_type" => "authorization_code");
+    $fields = array("client_id" => $settings->client_id, "scope" => $settings->scopes, "code" => $_GET["code"],"redirect_uri" => $settings->redirect_uri, "grant_type" => "authorization_code", "client_secret" => $settings->client_secret);
     $fields_string = "";
     foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
     rtrim($fields_string, "&");
@@ -162,6 +162,10 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                 }
             }
             if ($userInfo) {
+                // SAVE TOKEN AND EXPIRATION DATE AS USER META DATA
+                update_user_meta($userInfo->ID, 'o365_access_token',$return['success']->access_token);
+                update_user_meta($userInfo->ID, 'o365_refresh_token',$return['success']->refresh_token);
+                update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + intval($return['success']->expires_in)); // timestamp in seconds
                 // LOG IN USER
                 wp_set_current_user($userInfo->ID, $userInfo->user_login);
                 wp_set_auth_cookie($userInfo->ID);
@@ -375,10 +379,10 @@ class DT_O365_Authentication_Plugin
         $settings = [
             "client_id" => "",
             "client_secret" => "",
-            "scopes" => "user.read",
+            "scopes" => "user.read,offline_access",
             "redirect_uri" => wp_login_url(),
-            "authorize_uri" => "https://login.live.com/oauth20_authorize.srf",
-            "token_uri" => "https://login.live.com/oauth20_token.srf",
+            "authorize_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
+            "token_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
             "user_profile_uri" => "https://graph.microsoft.com/v1.0/me",
         ];
 
@@ -390,7 +394,7 @@ class DT_O365_Authentication_Plugin
         $settings = json_decode(get_option('dt_o365_settings'));
         if (!empty($settings->client_id)) {
             ?>
-                <a class="loginLink" href="<?php echo $settings->authorize_uri . "?client_id=" . $settings->client_id . "&scope=" . $settings->scopes . "&response_type=code&redirect_uri=" . $settings->redirect_uri . "&state=dt_o365_authentication"; ?>"></a>
+                <a class="loginLink" href="<?php echo $settings->authorize_uri . "?client_id=" . $settings->client_id . "&scope=" . $settings->scopes . "&response_type=code&redirect_uri=" . $settings->redirect_uri . "&state=dt_o365_authentication&response_mode=query"; ?>"></a>
                 <style>
                     .loginLink {
                         background-image: none,url(<?php echo plugin_dir_url(__FILE__) . '0365_login_link.svg'; ?>);
