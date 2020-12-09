@@ -84,15 +84,16 @@ function dt_o365_authentication_plugin()
 add_action('after_setup_theme', 'dt_o365_authentication_plugin');
 
 add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'), 20, 3);
+add_filter('template_redirect', array('dt_o365_authentication_plugin', 'o365_template_redirect'), 10, 3);
 
 // DETECT USER LOG IN O365
 if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365_authentication") {
 
     // ENABLE get_user_by() WORDPRESS FUNCTION
     include_once ABSPATH . 'wp-includes/pluggable.php';
-    
+
     $settings = json_decode(get_option('dt_o365_settings'));
-    $fields = array("client_id" => $settings->client_id, "scope" => $settings->scopes, "code" => $_GET["code"],"redirect_uri" => $settings->redirect_uri, "grant_type" => "authorization_code", "client_secret" => $settings->client_secret);
+    $fields = array("client_id" => $settings->client_id, "scope" => $settings->scopes, "code" => $_GET["code"], "redirect_uri" => $settings->redirect_uri, "grant_type" => "authorization_code", "client_secret" => $settings->client_secret);
     $fields_string = "";
     foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
     rtrim($fields_string, "&");
@@ -142,7 +143,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                 }
             } else {
                 //$userId = wp_create_user($userProfileInfo->userPrincipalName, wp_generate_password(), $userProfileInfo->userPrincipalName);
-                
+
                 $userId = wp_insert_user(array(
                     'user_login' => $userProfileInfo->userPrincipalName,
                     'user_pass' => wp_generate_password(),
@@ -150,7 +151,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                     'nickname' => $userProfileInfo->userPrincipalName,
                     'first_name' => $userProfileInfo->givenName,
                     'last_name' => $userProfileInfo->surname,
-                    'role' => 'multiplier'
+                    'role' => 'multiplier',
                 ));
                 if (is_wp_error($userId)) {
                     // SHOW ERROR MESSAGE (ERROR CREATING USER $userId->get_error_message())
@@ -163,13 +164,16 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
             }
             if ($userInfo) {
                 // SAVE TOKEN AND EXPIRATION DATE AS USER META DATA
-                update_user_meta($userInfo->ID, 'o365_access_token',$return['success']->access_token);
-                update_user_meta($userInfo->ID, 'o365_refresh_token',$return['success']->refresh_token);
+                update_user_meta($userInfo->ID, 'o365_access_token', $return['success']->access_token);
+                update_user_meta($userInfo->ID, 'o365_refresh_token', $return['success']->refresh_token);
                 update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + intval($return['success']->expires_in)); // timestamp in seconds
                 // LOG IN USER
                 wp_set_current_user($userInfo->ID, $userInfo->user_login);
                 wp_set_auth_cookie($userInfo->ID);
                 do_action('wp_login', $userInfo->user_login);
+
+                update_user_meta($userInfo->ID, 'o365_logged', '1');
+
                 // REDIRECT USER TO PROTECTED VIEW
                 wp_redirect(site_url());
             }
@@ -409,6 +413,24 @@ class DT_O365_Authentication_Plugin
                 </style>
             <?php
 }
+    }
+
+    public function o365_template_redirect($redirect_to)
+    {
+        if (is_user_logged_in()) {
+
+            global $current_user;
+            $o365Logged = get_user_meta($current_user->ID, 'o365_logged', true);
+            // ONLY ADD SCRIPTS IF THE USER LOGGED USING 0365 CREDENTIALS
+            if ($o365Logged == "1") {
+                wp_enqueue_script('detect-user-inactivity', plugin_dir_url(__FILE__) . 'includes/js/user-inactivity.js', array('jquery'), false, true);
+                wp_localize_script('detect-user-inactivity', 'settings', array(
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'timeout' => 10, //SAVE IN ADMIN SETTING (SECONDS)
+                ));
+            }
+
+        }
     }
 
     /**
