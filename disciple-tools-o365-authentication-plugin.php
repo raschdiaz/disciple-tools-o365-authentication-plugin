@@ -86,6 +86,8 @@ add_action('after_setup_theme', 'dt_o365_authentication_plugin');
 add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'), 20, 3);
 add_filter('template_redirect', array('dt_o365_authentication_plugin', 'o365_template_redirect'), 10, 3);
 
+add_action('wp_ajax_update_user_activity', array('dt_o365_authentication_plugin', 'o365_update_user_activity'));
+
 // DETECT USER LOG IN O365
 if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365_authentication") {
 
@@ -93,7 +95,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
     include_once ABSPATH . 'wp-includes/pluggable.php';
 
     $settings = json_decode(get_option('dt_o365_settings'));
-    $fields = array("client_id" => $settings->client_id, "scope" => $settings->scopes, "code" => $_GET["code"], "redirect_uri" => $settings->redirect_uri, "grant_type" => "authorization_code", "client_secret" => $settings->client_secret);
+    $fields = array("client_id" => $settings->client_id, "client_secret" => $settings->client_secret, "scope" => $settings->scopes, "redirect_uri" => $settings->redirect_uri, "grant_type" => "authorization_code", "code" => $_GET["code"]);
     $fields_string = "";
     foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
     rtrim($fields_string, "&");
@@ -114,77 +116,114 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
     }
     curl_close($curl);
     if (isset($return['success'])) {
-        $curlProfile = curl_init();
-        curl_setopt_array($curlProfile, array(
-            CURLOPT_URL => $settings->user_profile_uri,
-            CURLOPT_HTTPHEADER => array("Content-Type: application/json", "Authorization: Bearer " . $return['success']->access_token),
-            CURLOPT_RETURNTRANSFER => true,
-        ));
+        // CHECK IF O365 RESPONSE ITS CORRECT
+        if (isset($return['success']->access_token)) {
+            $curlProfile = curl_init();
+            curl_setopt_array($curlProfile, array(
+                CURLOPT_URL => $settings->user_profile_uri,
+                CURLOPT_HTTPHEADER => array("Content-Type: application/json", "Authorization: Bearer " . $return['success']->access_token),
+                CURLOPT_RETURNTRANSFER => true,
+            ));
 
-        $resultTwo = curl_exec($curlProfile);
-        $returnTwo = array();
-        if ($resultTwo->error) {
-            $returnTwo['error'] = curl_error($curlProfile);
-        } else {
-            $returnTwo['success'] = json_decode($resultTwo);
-        }
-
-        curl_close($curlProfile);
-
-        if (isset($returnTwo['success'])) {
-            // O365 User's Profile Info Retrieved Successfully
-            $userProfileInfo = $returnTwo['success'];
-
-            // CREATE AND LOGIN USER OR ONLY LOGIN USER
-            if (username_exists($userProfileInfo->userPrincipalName)) {
-                $userInfo = get_user_by('login', $userProfileInfo->userPrincipalName);
-                if (!$userInfo) {
-                    // SHOW ERROR MESSAGE (ERROR USER DOES NOT EXIST IN WORDPRESS)
-                }
+            $resultTwo = curl_exec($curlProfile);
+            $returnTwo = array();
+            if ($resultTwo->error) {
+                $returnTwo['error'] = curl_error($curlProfile);
             } else {
-                //$userId = wp_create_user($userProfileInfo->userPrincipalName, wp_generate_password(), $userProfileInfo->userPrincipalName);
+                $returnTwo['success'] = json_decode($resultTwo);
+            }
 
-                $userId = wp_insert_user(array(
-                    'user_login' => $userProfileInfo->userPrincipalName,
-                    'user_pass' => wp_generate_password(),
-                    'display_name' => $userProfileInfo->displayName,
-                    'nickname' => $userProfileInfo->userPrincipalName,
-                    'first_name' => $userProfileInfo->givenName,
-                    'last_name' => $userProfileInfo->surname,
-                    'role' => 'multiplier',
-                ));
-                if (is_wp_error($userId)) {
-                    // SHOW ERROR MESSAGE (ERROR CREATING USER $userId->get_error_message())
-                } else {
-                    $userInfo = get_user_by('ID', $userId);
-                    if (!$userInfo) {
-                        // SHOW ERROR MESSAGE (ERROR USER DOES NOT EXIST IN WORDPRESS $userInfo->get_error_message())
+            curl_close($curlProfile);
+
+            if (isset($returnTwo['success'])) {
+                // CHECK IF O365 RESPONSE ITS CORRECT
+                if (isset($returnTwo['success']->userPrincipalName)) {
+                    // O365 User's Profile Info Retrieved Successfully
+                    $userProfileInfo = $returnTwo['success'];
+                    // CREATE AND LOGIN USER OR ONLY LOGIN USER
+                    if (username_exists($userProfileInfo->userPrincipalName)) {
+                        $userInfo = get_user_by('login', $userProfileInfo->userPrincipalName);
+                        if (!$userInfo) {
+                            // SHOW ERROR MESSAGE (ERROR USER DOES NOT EXIST IN WORDPRESS)
+                        }
+                    } else {
+                        //$userId = wp_create_user($userProfileInfo->userPrincipalName, wp_generate_password(), $userProfileInfo->userPrincipalName);
+
+                        $userId = wp_insert_user(array(
+                            'user_login' => $userProfileInfo->userPrincipalName,
+                            'user_pass' => wp_generate_password(),
+                            'display_name' => $userProfileInfo->displayName,
+                            'nickname' => $userProfileInfo->userPrincipalName,
+                            'first_name' => $userProfileInfo->givenName,
+                            'last_name' => $userProfileInfo->surname,
+                            'role' => 'multiplier',
+                        ));
+                        if (is_wp_error($userId)) {
+                            // SHOW ERROR MESSAGE (ERROR CREATING USER $userId->get_error_message())
+                        } else {
+                            $userInfo = get_user_by('ID', $userId);
+                            if (!$userInfo) {
+                                // SHOW ERROR MESSAGE (ERROR USER DOES NOT EXIST IN WORDPRESS $userInfo->get_error_message())
+                            }
+                        }
                     }
+                    if ($userInfo) {
+                        // SAVE TOKEN AND EXPIRATION DATE AS USER META DATA
+                        update_user_meta($userInfo->ID, 'o365_access_token', $return['success']->access_token);
+                        update_user_meta($userInfo->ID, 'o365_refresh_token', $return['success']->refresh_token);
+                        update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + 10); // intval($return['success']->expires_in) timestamp in seconds
+                        // LOG IN USER
+                        wp_set_current_user($userInfo->ID, $userInfo->user_login);
+                        wp_set_auth_cookie($userInfo->ID);
+                        do_action('wp_login', $userInfo->user_login);
+
+                        update_user_meta($userInfo->ID, 'o365_logged', '1');
+
+                        // REDIRECT USER TO PROTECTED VIEW
+                        wp_redirect(site_url());
+                    }
+                } else {
+                    // SHOW ERROR MESSAGE (ERROR AUTHENTICATING USER ON O365)
+                    echo gettype($return) . '' . json_encode(
+                        $return,
+                        JSON_UNESCAPED_SLASHES |
+                        JSON_UNESCAPED_UNICODE |
+                        JSON_PRETTY_PRINT |
+                        JSON_PARTIAL_OUTPUT_ON_ERROR |
+                        JSON_INVALID_UTF8_SUBSTITUTE
+                    ).'</br>';
                 }
+            } else if (isset($returnTwo['error'])) {
+                // SHOW ERROR MESSAGE (ERROR RETRIEVING O365 USER PROFILE INFO)
+                echo gettype($return) . '' . json_encode(
+                    $return,
+                    JSON_UNESCAPED_SLASHES |
+                    JSON_UNESCAPED_UNICODE |
+                    JSON_PRETTY_PRINT |
+                    JSON_PARTIAL_OUTPUT_ON_ERROR |
+                    JSON_INVALID_UTF8_SUBSTITUTE
+                ).'</br>';
             }
-            if ($userInfo) {
-                // SAVE TOKEN AND EXPIRATION DATE AS USER META DATA
-                update_user_meta($userInfo->ID, 'o365_access_token', $return['success']->access_token);
-                update_user_meta($userInfo->ID, 'o365_refresh_token', $return['success']->refresh_token);
-                update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + intval($return['success']->expires_in)); // timestamp in seconds
-                // LOG IN USER
-                wp_set_current_user($userInfo->ID, $userInfo->user_login);
-                wp_set_auth_cookie($userInfo->ID);
-                do_action('wp_login', $userInfo->user_login);
-
-                update_user_meta($userInfo->ID, 'o365_logged', '1');
-
-                // REDIRECT USER TO PROTECTED VIEW
-                wp_redirect(site_url());
-            }
-        } else if (isset($returnTwo['error'])) {
-            // SHOW ERROR MESSAGE (ERROR RETRIEVING O365 USER PROFILE INFO)
-            echo print_r($returnTwo['error']);
+        } else {
+            echo gettype($return) . '' . json_encode(
+                $return,
+                JSON_UNESCAPED_SLASHES |
+                JSON_UNESCAPED_UNICODE |
+                JSON_PRETTY_PRINT |
+                JSON_PARTIAL_OUTPUT_ON_ERROR |
+                JSON_INVALID_UTF8_SUBSTITUTE
+            ).'</br>';
         }
-
     } else if (isset($return['error'])) {
         // SHOW ERROR MESSAGE (ERROR AUTHENTICATING USER ON O365)
-        echo print_r($return['error']);
+        echo gettype($return) . '' . json_encode(
+            $return,
+            JSON_UNESCAPED_SLASHES |
+            JSON_UNESCAPED_UNICODE |
+            JSON_PRETTY_PRINT |
+            JSON_PARTIAL_OUTPUT_ON_ERROR |
+            JSON_INVALID_UTF8_SUBSTITUTE
+        ).'</br>';
     }
     exit();
 }
@@ -418,7 +457,6 @@ class DT_O365_Authentication_Plugin
     public function o365_template_redirect($redirect_to)
     {
         if (is_user_logged_in()) {
-
             global $current_user;
             $o365Logged = get_user_meta($current_user->ID, 'o365_logged', true);
             // ONLY ADD SCRIPTS IF THE USER LOGGED USING 0365 CREDENTIALS
@@ -429,7 +467,88 @@ class DT_O365_Authentication_Plugin
                     'timeout' => 10, //SAVE IN ADMIN SETTING (SECONDS)
                 ));
             }
+        }
+    }
 
+    public function o365_update_user_activity()
+    {
+        if (isset($_POST) && is_user_logged_in()) {
+            global $current_user;
+
+            $userIsActive = sanitize_text_field($_POST['user_is_active']);
+            $userTokenExpiration = (int) get_user_meta($current_user->ID, 'o365_token_expires_in', true);
+            $tokenExpired = (current_time('timestamp') > $userTokenExpiration);
+
+            if ($tokenExpired) {
+                if ($userIsActive == "1") {
+                    //Update token
+
+                    $settings = json_decode(get_option('dt_o365_settings'));
+                    $refreshToken = get_user_meta($current_user->ID, 'o365_refresh_token', true);
+
+                    $fields = array("client_id" => $settings->client_id, "client_secret" => $settings->client_secret, "scope" => $settings->scopes, "redirect_uri" => $settings->redirect_uri, "grant_type" => "refresh_token", "refresh_token" => $refreshToken);
+                    $fields_string = "";
+                    foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
+                    rtrim($fields_string, "&");
+                    $curl = curl_init();
+                    curl_setopt_array($curl, array(
+                        CURLOPT_URL => $settings->token_uri,
+                        CURLOPT_HTTPHEADER => array("Content-Type: application/x-www-form-urlencoded"),
+                        CURLOPT_POST => count($fields),
+                        CURLOPT_POSTFIELDS => $fields_string,
+                        CURLOPT_RETURNTRANSFER => true,
+                    ));
+                    $result = curl_exec($curl);
+                    $return = array();
+                    if ($result->error) {
+                        $return['error'] = curl_error($curl);
+                    } else {
+                        $return['success'] = json_decode($result);
+                    }
+                    curl_close($curl);
+
+                    if (isset($return['success'])) {
+                        // CHECK IF O365 RESPONSE ITS CORRECT
+                        if ($return['success']->access_token) {
+                            update_user_meta($current_user->ID, 'o365_access_token', $return['success']->access_token);
+                            update_user_meta($current_user->ID, 'o365_refresh_token', $return['success']->refresh_token);
+                            update_user_meta($current_user->ID, 'o365_token_expires_in', current_time('timestamp') + 10); // intval($return['success']->expires_in) timestamp in seconds
+                        } else {
+                            echo 'ERROR UPDATING TOKEN!</br>';
+                            echo gettype($return) . '' . json_encode(
+                                $return,
+                                JSON_UNESCAPED_SLASHES |
+                                JSON_UNESCAPED_UNICODE |
+                                JSON_PRETTY_PRINT |
+                                JSON_PARTIAL_OUTPUT_ON_ERROR |
+                                JSON_INVALID_UTF8_SUBSTITUTE
+                            ).'</br>';
+                        }
+                    } else if (isset($return['error'])) {
+                        echo 'ERROR UPDATING TOKEN!</br>';
+                        echo gettype($return) . '' . json_encode(
+                            $return,
+                            JSON_UNESCAPED_SLASHES |
+                            JSON_UNESCAPED_UNICODE |
+                            JSON_PRETTY_PRINT |
+                            JSON_PARTIAL_OUTPUT_ON_ERROR |
+                            JSON_INVALID_UTF8_SUBSTITUTE
+                        ).'</br>';
+                    }
+
+                } else if ($userIsActive == "0") {
+                    // Reset user meta
+                    update_user_meta($current_user->ID, 'o365_logged', '0');
+                    update_user_meta($current_user->ID, 'o365_access_token', '');
+                    update_user_meta($current_user->ID, 'o365_refresh_token', '');
+                    update_user_meta($current_user->ID, 'o365_token_expires_in', '');
+                    // Log out user
+                    echo '<script>console.log("LOG OUT USER!")</script>';
+                    wp_logout();
+                    echo '<script>console.log("wp_safe_redirect(site_url())")</script>';
+                    wp_safe_redirect(site_url());
+                }
+            }
         }
     }
 

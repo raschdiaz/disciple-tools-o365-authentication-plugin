@@ -1,34 +1,8 @@
 "use strict";
 
 (function ($) {
-  var goInactiveTimeout;
-
-  function goInactive() {
-    console.log('goInactive()')
-    // SEND AJAX TO UPDATE USER META
-  }
-
-  function startTimer() {
-    console.log('startTimer()')
-    goInactiveTimeout = setTimeout(
-      goInactive,
-      settings.timeout * 1000
-    );
-  }
-
-  function resetTimer() {
-    console.log('resetTimer()')
-    clearTimeout(goInactiveTimeout);
-    try {
-      startTimer();
-    } catch (e) {
-      if (e instanceof TypeError) {
-        console.log(e, true);
-      } else {
-        console.log(e, true);
-      }
-    }
-  }
+  var goInactiveTimeout,
+    userIsActive = false;
 
   function eventListeners() {
     console.log("eventListeners()");
@@ -43,6 +17,39 @@
     $(document).on("MSPointerMove", resetTimer);
     $(document).on("ready", resetTimer);
     startTimer();
+  }
+
+  function startTimer() {
+    goInactiveTimeout = setTimeout(goInactive, settings.timeout * 1000);
+  }
+
+  function resetTimer() {
+    clearTimeout(goInactiveTimeout);
+    try {
+      // Don't send unnecessary ajax requests
+      if (!userIsActive) {
+        userIsActive = true;
+        sendUserActivityAjax();
+      }
+      startTimer();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function goInactive() {
+    userIsActive = false;
+    // SEND AJAX TO UPDATE USER META
+    sendUserActivityAjax();
+  }
+
+  function sendUserActivityAjax() {
+    let value = userIsActive ? "1" : "0";
+    console.log("sendUserActivityAjax() -> value: " + value);
+    $.post(settings.ajax_url, {
+      action: "update_user_activity",
+      user_is_active: value,
+    });
   }
 
   $(function () {
