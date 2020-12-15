@@ -33,7 +33,7 @@
       }
       startTimer();
     } catch (e) {
-      console.error(e);
+      //console.error(e);
     }
   }
 
@@ -49,7 +49,20 @@
     $.post(settings.ajax_url, {
       action: "update_user_activity",
       user_is_active: value,
-    });
+    })
+      .done(function (done) {
+        console.log("done");
+        console.log(done);
+        if(done.includes("wp_logout()")) {
+          console.log(settings)
+          window.open(settings.user_logout_uri);
+          window.location.replace(settings.home_url);
+        }
+      })
+      .fail(function (error) {
+        console.log("error");
+        console.error(error);
+      });
   }
 
   $(function () {

@@ -85,7 +85,6 @@ add_action('after_setup_theme', 'dt_o365_authentication_plugin');
 
 add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'), 20, 3);
 add_filter('template_redirect', array('dt_o365_authentication_plugin', 'o365_template_redirect'), 10, 3);
-
 add_action('wp_ajax_update_user_activity', array('dt_o365_authentication_plugin', 'o365_update_user_activity'));
 
 // DETECT USER LOG IN O365
@@ -171,7 +170,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                         // SAVE TOKEN AND EXPIRATION DATE AS USER META DATA
                         update_user_meta($userInfo->ID, 'o365_access_token', $return['success']->access_token);
                         update_user_meta($userInfo->ID, 'o365_refresh_token', $return['success']->refresh_token);
-                        update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + intval($return['success']->expires_in)); // timestamp in seconds
+                        update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + 15); // timestamp in seconds  intval($return['success']->expires_in)
                         // LOG IN USER
                         wp_set_current_user($userInfo->ID, $userInfo->user_login);
                         wp_set_auth_cookie($userInfo->ID);
@@ -191,7 +190,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                         JSON_PRETTY_PRINT |
                         JSON_PARTIAL_OUTPUT_ON_ERROR |
                         JSON_INVALID_UTF8_SUBSTITUTE
-                    ).'</br>';
+                    ) . '</br>';
                 }
             } else if (isset($returnTwo['error'])) {
                 // SHOW ERROR MESSAGE (ERROR RETRIEVING O365 USER PROFILE INFO)
@@ -202,7 +201,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                     JSON_PRETTY_PRINT |
                     JSON_PARTIAL_OUTPUT_ON_ERROR |
                     JSON_INVALID_UTF8_SUBSTITUTE
-                ).'</br>';
+                ) . '</br>';
             }
         } else {
             echo gettype($return) . '' . json_encode(
@@ -212,7 +211,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                 JSON_PRETTY_PRINT |
                 JSON_PARTIAL_OUTPUT_ON_ERROR |
                 JSON_INVALID_UTF8_SUBSTITUTE
-            ).'</br>';
+            ) . '</br>';
         }
     } else if (isset($return['error'])) {
         // SHOW ERROR MESSAGE (ERROR AUTHENTICATING USER ON O365)
@@ -223,7 +222,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
             JSON_PRETTY_PRINT |
             JSON_PARTIAL_OUTPUT_ON_ERROR |
             JSON_INVALID_UTF8_SUBSTITUTE
-        ).'</br>';
+        ) . '</br>';
     }
     exit();
 }
@@ -427,6 +426,7 @@ class DT_O365_Authentication_Plugin
             "authorize_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
             "token_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
             "user_profile_uri" => "https://graph.microsoft.com/v1.0/me",
+            "user_logout_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/logout"
         ];
 
         add_option('dt_o365_settings', json_encode($settings));
@@ -456,15 +456,19 @@ class DT_O365_Authentication_Plugin
 
     public function o365_template_redirect($redirect_to)
     {
+
         if (is_user_logged_in()) {
             global $current_user;
             $o365Logged = get_user_meta($current_user->ID, 'o365_logged', true);
+            $settings = json_decode(get_option('dt_o365_settings'));
             // ONLY ADD SCRIPTS IF THE USER LOGGED USING 0365 CREDENTIALS
             if ($o365Logged == "1") {
                 wp_enqueue_script('detect-user-inactivity', plugin_dir_url(__FILE__) . 'includes/js/user-inactivity.js', array('jquery'), false, true);
                 wp_localize_script('detect-user-inactivity', 'settings', array(
                     'ajax_url' => admin_url('admin-ajax.php'),
-                    'timeout' => 300, //SAVE IN ADMIN SETTING (SECONDS)
+                    'timeout' => 10, //SAVE IN ADMIN SETTING (SECONDS)
+                    'user_logout_uri' => $settings->user_logout_uri,
+                    'home_url' => home_url()
                 ));
             }
         }
@@ -480,41 +484,53 @@ class DT_O365_Authentication_Plugin
             $tokenExpired = (current_time('timestamp') > $userTokenExpiration);
 
             if ($tokenExpired) {
+                $settings = json_decode(get_option('dt_o365_settings'));
                 if ($userIsActive == "1") {
                     //Update token
-
-                    $settings = json_decode(get_option('dt_o365_settings'));
                     $refreshToken = get_user_meta($current_user->ID, 'o365_refresh_token', true);
 
-                    $fields = array("client_id" => $settings->client_id, "client_secret" => $settings->client_secret, "scope" => $settings->scopes, "redirect_uri" => $settings->redirect_uri, "grant_type" => "refresh_token", "refresh_token" => $refreshToken);
-                    $fields_string = "";
-                    foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
-                    rtrim($fields_string, "&");
-                    $curl = curl_init();
-                    curl_setopt_array($curl, array(
-                        CURLOPT_URL => $settings->token_uri,
-                        CURLOPT_HTTPHEADER => array("Content-Type: application/x-www-form-urlencoded"),
-                        CURLOPT_POST => count($fields),
-                        CURLOPT_POSTFIELDS => $fields_string,
-                        CURLOPT_RETURNTRANSFER => true,
-                    ));
-                    $result = curl_exec($curl);
-                    $return = array();
-                    if ($result->error) {
-                        $return['error'] = curl_error($curl);
-                    } else {
-                        $return['success'] = json_decode($result);
-                    }
-                    curl_close($curl);
+                    if (!empty($refreshToken)) {
 
-                    if (isset($return['success'])) {
-                        // CHECK IF O365 RESPONSE ITS CORRECT
-                        if ($return['success']->access_token) {
-                            update_user_meta($current_user->ID, 'o365_access_token', $return['success']->access_token);
-                            update_user_meta($current_user->ID, 'o365_refresh_token', $return['success']->refresh_token);
-                            update_user_meta($current_user->ID, 'o365_token_expires_in', current_time('timestamp') + intval($return['success']->expires_in)); // timestamp in seconds
+                        $fields = array("client_id" => $settings->client_id, "client_secret" => $settings->client_secret, "scope" => $settings->scopes, "redirect_uri" => $settings->redirect_uri, "grant_type" => "refresh_token", "refresh_token" => $refreshToken);
+                        $fields_string = "";
+                        foreach ($fields as $key => $value) {$fields_string .= $key . "=" . $value . "&";}
+                        rtrim($fields_string, "&");
+                        $curl = curl_init();
+                        curl_setopt_array($curl, array(
+                            CURLOPT_URL => $settings->token_uri,
+                            CURLOPT_HTTPHEADER => array("Content-Type: application/x-www-form-urlencoded"),
+                            CURLOPT_POST => count($fields),
+                            CURLOPT_POSTFIELDS => $fields_string,
+                            CURLOPT_RETURNTRANSFER => true,
+                        ));
+                        $result = curl_exec($curl);
+                        $return = array();
+                        if ($result->error) {
+                            $return['error'] = curl_error($curl);
                         } else {
-                            echo 'ERROR UPDATING TOKEN!</br>';
+                            $return['success'] = json_decode($result);
+                        }
+                        curl_close($curl);
+
+                        if (isset($return['success'])) {
+                            // CHECK IF O365 RESPONSE ITS CORRECT
+                            if ($return['success']->access_token) {
+                                update_user_meta($current_user->ID, 'o365_access_token', $return['success']->access_token);
+                                update_user_meta($current_user->ID, 'o365_refresh_token', $return['success']->refresh_token);
+                                update_user_meta($current_user->ID, 'o365_token_expires_in', current_time('timestamp') + intval($return['success']->expires_in)); // timestamp in seconds
+                            } else {
+                                echo 'ERROR UPDATING TOKEN! 1</br>';
+                                echo gettype($return) . '' . json_encode(
+                                    $return,
+                                    JSON_UNESCAPED_SLASHES |
+                                    JSON_UNESCAPED_UNICODE |
+                                    JSON_PRETTY_PRINT |
+                                    JSON_PARTIAL_OUTPUT_ON_ERROR |
+                                    JSON_INVALID_UTF8_SUBSTITUTE
+                                ) . '</br>';
+                            }
+                        } else if (isset($return['error'])) {
+                            echo 'ERROR UPDATING TOKEN! 2</br>';
                             echo gettype($return) . '' . json_encode(
                                 $return,
                                 JSON_UNESCAPED_SLASHES |
@@ -522,20 +538,10 @@ class DT_O365_Authentication_Plugin
                                 JSON_PRETTY_PRINT |
                                 JSON_PARTIAL_OUTPUT_ON_ERROR |
                                 JSON_INVALID_UTF8_SUBSTITUTE
-                            ).'</br>';
+                            ) . '</br>';
                         }
-                    } else if (isset($return['error'])) {
-                        echo 'ERROR UPDATING TOKEN!</br>';
-                        echo gettype($return) . '' . json_encode(
-                            $return,
-                            JSON_UNESCAPED_SLASHES |
-                            JSON_UNESCAPED_UNICODE |
-                            JSON_PRETTY_PRINT |
-                            JSON_PARTIAL_OUTPUT_ON_ERROR |
-                            JSON_INVALID_UTF8_SUBSTITUTE
-                        ).'</br>';
-                    }
 
+                    }
                 } else if ($userIsActive == "0") {
                     // Reset user meta
                     update_user_meta($current_user->ID, 'o365_logged', '0');
@@ -543,10 +549,10 @@ class DT_O365_Authentication_Plugin
                     update_user_meta($current_user->ID, 'o365_refresh_token', '');
                     update_user_meta($current_user->ID, 'o365_token_expires_in', '');
                     // Log out user
-                    echo '<script>console.log("LOG OUT USER!")</script>';
+                    //echo '"LOG OUT USER!"';
                     wp_logout();
-                    echo '<script>console.log("wp_safe_redirect(site_url())")</script>';
-                    wp_safe_redirect(site_url());
+                    //Send response to user-inactivity.js
+                    echo 'wp_logout()';
                 }
             }
         }
