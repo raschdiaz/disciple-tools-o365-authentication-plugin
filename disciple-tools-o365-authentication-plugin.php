@@ -170,7 +170,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365
                         // SAVE TOKEN AND EXPIRATION DATE AS USER META DATA
                         update_user_meta($userInfo->ID, 'o365_access_token', $return['success']->access_token);
                         update_user_meta($userInfo->ID, 'o365_refresh_token', $return['success']->refresh_token);
-                        update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + 15); // timestamp in seconds  intval($return['success']->expires_in)
+                        update_user_meta($userInfo->ID, 'o365_token_expires_in', current_time('timestamp') + intval($return['success']->expires_in)); // timestamp in seconds
                         // LOG IN USER
                         wp_set_current_user($userInfo->ID, $userInfo->user_login);
                         wp_set_auth_cookie($userInfo->ID);
@@ -466,7 +466,7 @@ class DT_O365_Authentication_Plugin
                 wp_enqueue_script('detect-user-inactivity', plugin_dir_url(__FILE__) . 'includes/js/user-inactivity.js', array('jquery'), false, true);
                 wp_localize_script('detect-user-inactivity', 'settings', array(
                     'ajax_url' => admin_url('admin-ajax.php'),
-                    'timeout' => 10, //SAVE IN ADMIN SETTING (SECONDS)
+                    'timeout' => 300, //SAVE IN ADMIN SETTING (SECONDS)
                     'user_logout_uri' => $settings->user_logout_uri,
                     'home_url' => home_url()
                 ));
