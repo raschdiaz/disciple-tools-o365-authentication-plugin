@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly
  */
 
 class DT_O365_Authentication_Plugin_Site_Links {
-    public $type = 'dt_o365_authentication_plugin';
+    public $type = 'dt_third_party_authentication_plugin';
 
     private static $_instance = null;
     public static function instance() {
@@ -33,7 +33,7 @@ class DT_O365_Authentication_Plugin_Site_Links {
     }
 
     public function site_link_type( $type ) {
-        $type[$this->type] = __( 'O365 Authentication Plugin' );
+        $type[$this->type] = __( 'Third Party Authentication Plugin' );
         return $type;
     }
 }

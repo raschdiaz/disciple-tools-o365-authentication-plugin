@@ -3,7 +3,7 @@
 class DT_O365_Authentication_Post_Type {
 
     // Setup post type naming
-    public $post_type = 'o365_post_type';
+    public $post_type = 'third_party_post_type';
     public $single = 'Starter';
     public $plural = 'Starters';
 

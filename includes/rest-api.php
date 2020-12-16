@@ -33,7 +33,7 @@ class DT_O365_Authentication_Plugin_Endpoints
 
     //See https://github.com/DiscipleTools/disciple-tools-theme/wiki/Site-to-Site-Link for outside of wordpress authentication
     public function add_api_routes() {
-        $namespace = 'dt_o365_authentication_plugin/v1';
+        $namespace = 'dt_third_party_authentication_plugin/v1';
 
         register_rest_route(
             $namespace, '/endpoint', [

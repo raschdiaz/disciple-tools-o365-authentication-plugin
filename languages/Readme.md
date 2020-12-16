@@ -2,4 +2,4 @@
 {translation-domain}-{localisation}.po
  
 ex:  
-dt_o365_authentication_plugin.fr_FR.po
+dt_third_party_authentication_plugin.fr_FR.po

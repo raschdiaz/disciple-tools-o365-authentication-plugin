@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Plugin Name: Disciple Tools - 0365 Authentication
- * Plugin URI: https://github.com/HighDeveloper/disciple-tools-o365-authentication-plugin
+ * Plugin Name: Disciple Tools - Third Party Authentication
+ * Plugin URI: https://github.com/HighDeveloper/disciple-tools-third-party-authentication-plugin
  * Description: Disciple Tools - 0365 is a plugin created to allow the user to connect the Disciple Tools instance using
  * O365 credentials of their organization
  * Version:  0.1.0
  * Author URI: https://github.com/HighDeveloper
- * GitHub Plugin URI: https://github.com/HighDeveloper/disciple-tools-o365-authentication-plugin
+ * GitHub Plugin URI: https://github.com/HighDeveloper/disciple-tools-third-party-authentication-plugin
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
  * Tested up to: 5.4
@@ -20,8 +20,8 @@
 
 /**
  * Refactoring (renaming) this plugin as your own:
- * 1. @todo Refactor all occurrences of the name DT_O365_Authentication, dt_o365_authentication, dt-o365-authentication, o365-authentication-plugin, o365-authentication-plugin, o365_post_type, and O365 Authentication Plugin
- * 2. @todo Rename the `disciple-tools-o365-authentication-plugin.php and menu-and-tabs.php files.
+ * 1. @todo Refactor all occurrences of the name DT_Third_Party_Authentication, dt_third_party_authentication, dt-third-party-authentication, third-party-authentication-plugin, third_party_post_type, and Third Party Authentication Plugin
+ * 2. @todo Rename the `disciple-tools-third-party-authentication-plugin.php and menu-and-tabs.php files.
  * 3. @todo Update the README.md and LICENSE
  * 4. @todo Update the default.pot file if you intend to make your plugin multilingual. Use a tool like POEdit
  * 5. @todo Change the translation domain to in the phpcs.xml your plugin's domain: @todo
@@ -40,7 +40,7 @@ $dt_o365_authentication_required_dt_theme_version = '0.28.0';
  * @access public
  * @return object|bool
  */
-function dt_o365_authentication_plugin()
+function dt_third_party_authentication_plugin()
 {
     global $dt_o365_authentication_required_dt_theme_version;
     $wp_theme = wp_get_theme();
@@ -73,23 +73,23 @@ function dt_o365_authentication_plugin()
         return DT_O365_Authentication_Plugin::get_instance();
     }
     // @todo remove this "else if", if not using rest-api.php
-    else if (strpos(dt_get_url_path(), 'dt_o365_authentication_plugin') !== false) {
+    else if (strpos(dt_get_url_path(), 'dt_third_party_authentication_plugin') !== false) {
         return DT_O365_Authentication_Plugin::get_instance();
     }
     // @todo remove if not using a post type
-    else if (strpos(dt_get_url_path(), 'o365_post_type') !== false) {
+    else if (strpos(dt_get_url_path(), 'third_party_post_type') !== false) {
         return DT_O365_Authentication_Plugin::get_instance();
     }
 }
-add_action('after_setup_theme', 'dt_o365_authentication_plugin');
+add_action('after_setup_theme', 'dt_third_party_authentication_plugin');
 
-add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'), 20, 3);
-add_filter('template_redirect', array('dt_o365_authentication_plugin', 'o365_template_redirect'), 10, 3);
-add_action('wp_ajax_update_user_activity', array('dt_o365_authentication_plugin', 'o365_update_user_activity'));
-add_action('wp_logout', array('dt_o365_authentication_plugin', 'o365_logout'));
+add_action('login_footer', array('dt_third_party_authentication_plugin', 'render_login_button'), 20, 3);
+add_filter('template_redirect', array('dt_third_party_authentication_plugin', 'o365_template_redirect'), 10, 3);
+add_action('wp_ajax_update_user_activity', array('dt_third_party_authentication_plugin', 'o365_update_user_activity'));
+add_action('wp_logout', array('dt_third_party_authentication_plugin', 'o365_logout'));
 
 // DETECT USER LOG IN O365
-if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365_authentication") {
+if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_third_party_authentication") {
 
     // ENABLE get_user_by() WORDPRESS FUNCTION
     include_once ABSPATH . 'wp-includes/pluggable.php';
@@ -264,7 +264,7 @@ class DT_O365_Authentication_Plugin
         static $instance = null;
 
         if (is_null($instance)) {
-            $instance = new dt_o365_authentication_plugin();
+            $instance = new dt_third_party_authentication_plugin();
             $instance->setup();
             $instance->includes();
             $instance->setup_actions();
@@ -318,7 +318,7 @@ class DT_O365_Authentication_Plugin
         $this->img_uri = trailingslashit($this->dir_uri . 'img');
 
         // Admin and settings variables
-        $this->token = 'dt_o365_authentication_plugin';
+        $this->token = 'dt_third_party_authentication_plugin';
         $this->version = '0.1';
 
         // sample rest api class
@@ -353,17 +353,17 @@ class DT_O365_Authentication_Plugin
              * Also, see the instructions for version updating to understand the steps involved.
              * @see https://github.com/DiscipleTools/disciple-tools-version-control/wiki/How-to-Update-the-Starter-Plugin
              * @todo enable this section with your own hosted file
-             * @todo An example of this file can be found in /includes/admin/disciple-tools-o365-authentication-plugin-version-control.json
+             * @todo An example of this file can be found in /includes/admin/disciple-tools-third-party-authentication-plugin-version-control.json
              * @todo It is recommended to host this version control file outside the project itself. Github is a good option for delivering static json.
              */
 
             /***** @todo remove from here
 
-        $hosted_json = "https://raw.githubusercontent.com/DiscipleTools/disciple-tools-o365-authentication-plugin/master/includes/admin/version-control.json"; // @todo change this url
+        $hosted_json = "https://raw.githubusercontent.com/DiscipleTools/disciple-tools-third-party-authentication-plugin/master/includes/admin/version-control.json"; // @todo change this url
         Puc_v4_Factory::buildUpdateChecker(
         $hosted_json,
         __FILE__,
-        'disciple-tools-o365-authentication-plugin'
+        'disciple-tools-third-party-authentication-plugin'
         );
 
          ********* @todo to here */
@@ -438,7 +438,7 @@ class DT_O365_Authentication_Plugin
         $settings = json_decode(get_option('dt_o365_settings'));
         if (!empty($settings->client_id)) {
             ?>
-                <a class="loginLink" href="<?php echo $settings->authorize_uri . "?client_id=" . $settings->client_id . "&scope=" . $settings->scopes . "&response_type=code&redirect_uri=" . $settings->redirect_uri . "&state=dt_o365_authentication&response_mode=query"; ?>"></a>
+                <a class="loginLink" href="<?php echo $settings->authorize_uri . "?client_id=" . $settings->client_id . "&scope=" . $settings->scopes . "&response_type=code&redirect_uri=" . $settings->redirect_uri . "&state=dt_third_party_authentication&response_mode=query"; ?>"></a>
                 <style>
                     .loginLink {
                         background-image: none,url(<?php echo plugin_dir_url(__FILE__) . '0365_login_link.svg'; ?>);
@@ -593,7 +593,7 @@ class DT_O365_Authentication_Plugin
      */
     public function deactivation()
     {
-        delete_option('dismissed-dt-o365-authentication');
+        delete_option('dismissed-dt-third-party-authentication');
         delete_option('dt_o365_settings');
     }
 
@@ -606,7 +606,7 @@ class DT_O365_Authentication_Plugin
      */
     public function i18n()
     {
-        load_plugin_textdomain('dt_o365_authentication_plugin', false, trailingslashit(dirname(plugin_basename(__FILE__))) . 'languages');
+        load_plugin_textdomain('dt_third_party_authentication_plugin', false, trailingslashit(dirname(plugin_basename(__FILE__))) . 'languages');
     }
 
     /**
@@ -618,7 +618,7 @@ class DT_O365_Authentication_Plugin
      */
     public function __toString()
     {
-        return 'dt_o365_authentication_plugin';
+        return 'dt_third_party_authentication_plugin';
     }
 
     /**
@@ -656,7 +656,7 @@ class DT_O365_Authentication_Plugin
      */
     public function __call($method = '', $args = array())
     {
-        _doing_it_wrong("dt_o365_authentication_plugin::" . esc_html($method), 'Method does not exist.', '0.1');
+        _doing_it_wrong("dt_third_party_authentication_plugin::" . esc_html($method), 'Method does not exist.', '0.1');
         unset($method, $args);
         return null;
     }
@@ -672,23 +672,23 @@ function dt_o365_authentication_plugin_hook_admin_notice()
     global $dt_o365_authentication_required_dt_theme_version;
     $wp_theme = wp_get_theme();
     $current_version = $wp_theme->version;
-    $message = __("'Disciple Tools - O365 Authentication Plugin' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_o365_authentication_plugin");
+    $message = __("'Disciple Tools - Third Party Authentication Plugin' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_third_party_authentication_plugin");
     if ($wp_theme->get_template() === "disciple-tools-theme") {
-        $message .= sprintf(esc_html__('Current Disciple Tools version: %1$s, required version: %2$s', 'dt_o365_authentication_plugin'), esc_html($current_version), esc_html($dt_o365_authentication_required_dt_theme_version));
+        $message .= sprintf(esc_html__('Current Disciple Tools version: %1$s, required version: %2$s', 'dt_third_party_authentication_plugin'), esc_html($current_version), esc_html($dt_o365_authentication_required_dt_theme_version));
     }
     // Check if it's been dismissed...
-    if (!get_option('dismissed-dt-o365-authentication', false)) {?>
-        <div class="notice notice-error notice-dt-o365-authentication is-dismissible" data-notice="dt-o365-authentication">
+    if (!get_option('dismissed-dt-third-party-authentication', false)) {?>
+        <div class="notice notice-error notice-dt-third-party-authentication is-dismissible" data-notice="dt-third-party-authentication">
             <p><?php echo esc_html($message); ?></p>
         </div>
         <script>
             jQuery(function($) {
-                $(document).on('click', '.notice-dt-o365-authentication .notice-dismiss', function() {
+                $(document).on('click', '.notice-dt-third-party-authentication .notice-dismiss', function() {
                     $.ajax(ajaxurl, {
                         type: 'POST',
                         data: {
                             action: 'dismissed_notice_handler',
-                            type: 'dt-o365-authentication',
+                            type: 'dt-third-party-authentication',
                             security: '<?php echo esc_html(wp_create_nonce('wp_rest_dismiss')) ?>'
                         }
                     })

@@ -23,7 +23,7 @@ DT_O365_Authentication_Plugin_Menu::instance();
 class DT_O365_Authentication_Plugin_Menu
 {
 
-    public $token = 'dt_o365_authentication_plugin';
+    public $token = 'dt_third_party_authentication_plugin';
 
     private static $_instance = null;
 
@@ -62,7 +62,7 @@ class DT_O365_Authentication_Plugin_Menu
     public function register_menu()
     {
         add_menu_page(__('Extensions (DT)', 'disciple_tools'), __('Extensions (DT)', 'disciple_tools'), 'manage_dt', 'dt_extensions', [$this, 'extensions_menu'], 'dashicons-admin-generic', 59);
-        add_submenu_page('dt_extensions', __('O365 Authentication Plugin', 'dt_o365_authentication_plugin'), __('O365 Authentication Plugin', 'dt_o365_authentication_plugin'), 'manage_dt', $this->token, [$this, 'content']);
+        add_submenu_page('dt_extensions', __('Third Party Authentication Plugin', 'dt_third_party_authentication_plugin'), __('Third Party Authentication Plugin', 'dt_third_party_authentication_plugin'), 'manage_dt', $this->token, [$this, 'content']);
     }
 
     /**
@@ -86,26 +86,26 @@ class DT_O365_Authentication_Plugin_Menu
         if (isset($_GET["tab"])) {
             $tab = sanitize_key(wp_unslash($_GET["tab"]));
         } else {
-            $tab = 'general';
+            $tab = 'microsoft-azure';
         }
 
         $link = 'admin.php?page=' . $this->token . '&tab=';
 
         ?>
 		<div class="wrap">
-			<h2><?php esc_attr_e('O365 Authentication Plugin', 'dt_o365_authentication_plugin')?></h2>
+			<h2><?php esc_attr_e('Third Party Authentication Plugin', 'dt_third_party_authentication_plugin')?></h2>
 			<h2 class="nav-tab-wrapper">
-				<a href="<?php echo esc_attr($link) . 'general' ?>" class="nav-tab <?php echo esc_html(($tab == 'general' || !isset($tab)) ? 'nav-tab-active' : ''); ?>"><?php esc_attr_e('General', 'dt_o365_authentication_plugin')?></a>
+				<a href="<?php echo esc_attr($link) . 'microsoft-azure' ?>" class="nav-tab <?php echo esc_html(($tab == 'microsoft-azure' || !isset($tab)) ? 'nav-tab-active' : ''); ?>"><?php esc_attr_e('Microsoft Azure', 'dt_third_party_authentication_plugin')?></a>
 				<!--a href="<?php //echo esc_attr( $link ) . 'second'
         ?>" class="nav-tab <?php //echo esc_html( ( $tab == 'second' || !isset( $tab ) ) ? 'nav-tab-active' : '' );
-        ?>"><?php //esc_attr_e( 'Second', 'dt_o365_authentication_plugin' )
+        ?>"><?php //esc_attr_e( 'Second', 'dt_third_party_authentication_plugin' )
         ?></a-->
 			</h2>
 
 			<?php
 switch ($tab) {
-            case "general":
-                $object = new DT_O365_Authentication_Tab_General();
+            case "microsoft-azure":
+                $object = new DT_O365_Authentication_Tab_Microsoft_Azure();
                 $object->content();
                 break;
             //case "second":
@@ -124,9 +124,9 @@ switch ($tab) {
 }
 
 /**
- * Class DT_O365_Authentication_Tab_General
+ * Class DT_O365_Authentication_Tab_Microsoft_Azure
  */
-class DT_O365_Authentication_Tab_General
+class DT_O365_Authentication_Tab_Microsoft_Azure
 {
     public function content()
     {
@@ -155,7 +155,7 @@ class DT_O365_Authentication_Tab_General
 							<table class="widefat striped" style="width: 80%;">
 								<thead>
 									<tr>
-										<th colspan="1">Microsoft Azure API Credentials</th>
+										<th colspan="1">API Credentials</th>
 									</tr>
 								</thead>
 								<tbody>

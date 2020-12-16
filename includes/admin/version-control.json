@@ -1,9 +1,9 @@
 {
-  "name": "Disciple Tools - O365 Authentication Plugin",
+  "name": "Disciple Tools - Third Party Authentication Plugin",
   "version": "0.1.0",
-  "download_url": "https://github.com/DiscipleTools/disciple-tools-o365-authentication-plugin/releases/latest/download/disciple-tools-o365-authentication-plugin.zip",
+  "download_url": "https://github.com/DiscipleTools/disciple-tools-third-party-authentication-plugin/releases/latest/download/disciple-tools-third-party-authentication-plugin.zip",
   "sections": {
-    "description": "Disciple Tools - O365 Authentication Plugin.",
+    "description": "Disciple Tools - Third Party Authentication Plugin.",
     "installation": "(Required) You must have Disciple.Tools Theme installed before using this plugin. Once Disciple.Tools is installed, you can use the normal Plugin system to install the plugin.",
     "changelog": ""
   },
@@ -17,10 +17,10 @@
   },
   "author": "Disciple Tools",
   "author_homepage": "https://disciple.tools",
-  "homepage": "https://github.com/DiscipleTools/disciple-tools-o365-authentication-plugin",
-  "issues_url": "https://github.com/DiscipleTools/disciple-tools-o365-authentication-plugin/issues",
-  "projects_url": "https://github.com/DiscipleTools/disciple-tools-o365-authentication-plugin/projects",
-  "wiki_url": "https://github.com/DiscipleTools/disciple-tools-o365-authentication-plugin/wiki",
-  "license_url": "https://github.com/DiscipleTools/disciple-tools-o365-authentication-plugin/blob/master/LICENSE",
-  "readme_url": "https://github.com/DiscipleTools/disciple-tools-o365-authentication-plugin/blob/master/README.md"
+  "homepage": "https://github.com/DiscipleTools/disciple-tools-third-party-authentication-plugin",
+  "issues_url": "https://github.com/DiscipleTools/disciple-tools-third-party-authentication-plugin/issues",
+  "projects_url": "https://github.com/DiscipleTools/disciple-tools-third-party-authentication-plugin/projects",
+  "wiki_url": "https://github.com/DiscipleTools/disciple-tools-third-party-authentication-plugin/wiki",
+  "license_url": "https://github.com/DiscipleTools/disciple-tools-third-party-authentication-plugin/blob/master/LICENSE",
+  "readme_url": "https://github.com/DiscipleTools/disciple-tools-third-party-authentication-plugin/blob/master/README.md"
 }
