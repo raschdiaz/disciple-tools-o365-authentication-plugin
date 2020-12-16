@@ -555,10 +555,10 @@ class DT_O365_Authentication_Plugin
                     update_user_meta($current_user->ID, 'o365_access_token', '');
                     update_user_meta($current_user->ID, 'o365_refresh_token', '');
                     update_user_meta($current_user->ID, 'o365_token_expires_in', '');
-                    // Log out user
-                    wp_logout();
                     //Send response to user-inactivity.js
                     echo 'wp_logout()';
+                    // Log out user (This function will execute o365_logout() but not javascript)
+                    wp_logout();
                 }
             }
         }

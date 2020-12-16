@@ -30,6 +30,7 @@
       }
       startTimer();
     } catch (error) {
+      console.log('ERROR resetTimer()');
       console.error(error);
     }
   }
@@ -54,6 +55,7 @@
         }
       })
       .fail(function (error) {
+        console.log('ERROR sendUserActivityAjax()');
         console.error(error);
       });
   }
