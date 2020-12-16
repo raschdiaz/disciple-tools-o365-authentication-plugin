@@ -86,6 +86,7 @@ add_action('after_setup_theme', 'dt_o365_authentication_plugin');
 add_action('login_footer', array('dt_o365_authentication_plugin', 'render_login_button'), 20, 3);
 add_filter('template_redirect', array('dt_o365_authentication_plugin', 'o365_template_redirect'), 10, 3);
 add_action('wp_ajax_update_user_activity', array('dt_o365_authentication_plugin', 'o365_update_user_activity'));
+add_action('wp_logout', array('dt_o365_authentication_plugin', 'o365_logout'));
 
 // DETECT USER LOG IN O365
 if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_o365_authentication") {
@@ -426,7 +427,7 @@ class DT_O365_Authentication_Plugin
             "authorize_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
             "token_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
             "user_profile_uri" => "https://graph.microsoft.com/v1.0/me",
-            "user_logout_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/logout"
+            "user_logout_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/logout",
         ];
 
         add_option('dt_o365_settings', json_encode($settings));
@@ -456,19 +457,25 @@ class DT_O365_Authentication_Plugin
 
     public function o365_template_redirect($redirect_to)
     {
-
         if (is_user_logged_in()) {
             global $current_user;
             $o365Logged = get_user_meta($current_user->ID, 'o365_logged', true);
             $settings = json_decode(get_option('dt_o365_settings'));
             // ONLY ADD SCRIPTS IF THE USER LOGGED USING 0365 CREDENTIALS
             if ($o365Logged == "1") {
+                wp_enqueue_script('set-user-session', plugin_dir_url(__FILE__) . 'includes/js/set-user-session.js', array('jquery'), false, true);
+                wp_localize_script('set-user-session', 'userSettings', array(
+                    'user_logged_in_o365' => true,
+                    'user_logout_uri' => $settings->user_logout_uri,
+                    'home_url' => home_url(),
+                ));
+
                 wp_enqueue_script('detect-user-inactivity', plugin_dir_url(__FILE__) . 'includes/js/user-inactivity.js', array('jquery'), false, true);
                 wp_localize_script('detect-user-inactivity', 'settings', array(
                     'ajax_url' => admin_url('admin-ajax.php'),
                     'timeout' => 300, //SAVE IN ADMIN SETTING (SECONDS)
                     'user_logout_uri' => $settings->user_logout_uri,
-                    'home_url' => home_url()
+                    'home_url' => home_url(),
                 ));
             }
         }
@@ -549,13 +556,28 @@ class DT_O365_Authentication_Plugin
                     update_user_meta($current_user->ID, 'o365_refresh_token', '');
                     update_user_meta($current_user->ID, 'o365_token_expires_in', '');
                     // Log out user
-                    //echo '"LOG OUT USER!"';
                     wp_logout();
                     //Send response to user-inactivity.js
                     echo 'wp_logout()';
                 }
             }
         }
+    }
+
+    public function o365_logout()
+    {
+        ?>
+            <script>
+                if('user_logged_in_o365' in localStorage) {
+                    window.open(localStorage.user_logout_uri);
+                    window.location.replace(localStorage.home_url);
+                    localStorage.clear();
+                } else {
+                    window.location.replace('<?php echo wp_login_url(); ?>');
+                }
+            </script>
+        <?php
+        exit();
     }
 
     /**

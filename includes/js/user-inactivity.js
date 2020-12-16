@@ -5,9 +5,6 @@
     userIsActive = false;
 
   function eventListeners() {
-    console.log("eventListeners()");
-    console.log("settings");
-    console.log(settings);
     $(document).on("mousemove", resetTimer);
     $(document).on("mousedown", resetTimer);
     $(document).on("keydown", resetTimer);
@@ -32,8 +29,8 @@
         sendUserActivityAjax();
       }
       startTimer();
-    } catch (e) {
-      //console.error(e);
+    } catch (error) {
+      console.error(error);
     }
   }
 
@@ -45,22 +42,18 @@
 
   function sendUserActivityAjax() {
     let value = userIsActive ? "1" : "0";
-    console.log("sendUserActivityAjax() -> value: " + value);
+
     $.post(settings.ajax_url, {
       action: "update_user_activity",
       user_is_active: value,
     })
       .done(function (done) {
-        console.log("done");
-        console.log(done);
-        if(done.includes("wp_logout()")) {
-          console.log(settings)
+        if (done.includes("wp_logout()")) {
           window.open(settings.user_logout_uri);
           window.location.replace(settings.home_url);
         }
       })
       .fail(function (error) {
-        console.log("error");
         console.error(error);
       });
   }
