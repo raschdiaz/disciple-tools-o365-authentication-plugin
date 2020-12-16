@@ -569,7 +569,11 @@ class DT_O365_Authentication_Plugin
         ?>
             <script>
                 if('user_logged_in_o365' in localStorage) {
-                    window.open(localStorage.user_logout_uri);
+                    var link = document.createElement("a");
+                    link.href = localStorage.user_logout_uri;
+                    link.target = "_blank";
+                    link.click();
+                    //window.open(localStorage.user_logout_uri);
                     window.location.replace(localStorage.home_url);
                     localStorage.clear();
                 } else {
