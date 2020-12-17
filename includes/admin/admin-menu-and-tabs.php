@@ -1,9 +1,9 @@
 <?php
 
 /**
- * DT_O365_Authentication_Plugin_Menu class for the admin page
+ * DT_Third_Party_Authentication_Plugin_Menu class for the admin page
  *
- * @class       DT_O365_Authentication_Plugin_Menu
+ * @class       DT_Third_Party_Authentication_Plugin_Menu
  * @version     0.1.0
  * @since       0.1.0
  */
@@ -15,12 +15,12 @@ if (!defined('ABSPATH')) {
 /**
  * Initialize menu class
  */
-DT_O365_Authentication_Plugin_Menu::instance();
+DT_Third_Party_Authentication_Plugin_Menu::instance();
 
 /**
- * Class DT_O365_Authentication_Plugin_Menu
+ * Class DT_Third_Party_Authentication_Plugin_Menu
  */
-class DT_O365_Authentication_Plugin_Menu
+class DT_Third_Party_Authentication_Plugin_Menu
 {
 
     public $token = 'dt_third_party_authentication_plugin';
@@ -28,13 +28,13 @@ class DT_O365_Authentication_Plugin_Menu
     private static $_instance = null;
 
     /**
-     * DT_O365_Authentication_Plugin_Menu Instance
+     * DT_Third_Party_Authentication_Plugin_Menu Instance
      *
-     * Ensures only one instance of DT_O365_Authentication_Plugin_Menu is loaded or can be loaded.
+     * Ensures only one instance of DT_Third_Party_Authentication_Plugin_Menu is loaded or can be loaded.
      *
      * @since 0.1.0
      * @static
-     * @return DT_O365_Authentication_Plugin_Menu instance
+     * @return DT_Third_Party_Authentication_Plugin_Menu instance
      */
     public static function instance()
     {

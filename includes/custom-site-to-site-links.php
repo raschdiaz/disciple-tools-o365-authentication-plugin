@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; } // Exit if accessed directly
  * Configures the site link system for the network reporting
  */
 
-class DT_O365_Authentication_Plugin_Site_Links {
+class DT_Third_Party_Authentication_Plugin_Site_Links {
     public $type = 'dt_third_party_authentication_plugin';
 
     private static $_instance = null;
@@ -37,5 +37,5 @@ class DT_O365_Authentication_Plugin_Site_Links {
         return $type;
     }
 }
-DT_O365_Authentication_Plugin_Site_Links::instance();
+DT_Third_Party_Authentication_Plugin_Site_Links::instance();
 

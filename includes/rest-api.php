@@ -4,7 +4,7 @@
  */
 
 
-class DT_O365_Authentication_Plugin_Endpoints
+class DT_Third_Party_Authentication_Plugin_Endpoints
 {
     public $permissions = [ 'view_any_contacts', 'view_project_metrics' ];
 
@@ -56,4 +56,4 @@ class DT_O365_Authentication_Plugin_Endpoints
         return true;
     }
 }
-DT_O365_Authentication_Plugin_Endpoints::instance();
+DT_Third_Party_Authentication_Plugin_Endpoints::instance();

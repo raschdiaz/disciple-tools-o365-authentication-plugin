@@ -3,8 +3,7 @@
 /**
  * Plugin Name: Disciple Tools - Third Party Authentication
  * Plugin URI: https://github.com/HighDeveloper/disciple-tools-third-party-authentication-plugin
- * Description: Disciple Tools - 0365 is a plugin created to allow the user to connect the Disciple Tools instance using
- * O365 credentials of their organization
+ * Description: Disciple Tools - Third Party Authentication is a plugin created to allow the user to connect the Disciple Tools instance using several authentication methods like Microsoft Azure .etc.
  * Version:  0.1.0
  * Author URI: https://github.com/HighDeveloper
  * GitHub Plugin URI: https://github.com/HighDeveloper/disciple-tools-third-party-authentication-plugin
@@ -20,7 +19,7 @@
 
 /**
  * Refactoring (renaming) this plugin as your own:
- * 1. @todo Refactor all occurrences of the name DT_Third_Party_Authentication, dt_third_party_authentication, dt-third-party-authentication, third-party-authentication-plugin, third_party_post_type, and Third Party Authentication Plugin
+ * 1. @todo Refactor all occurrences of the name DT_Third_Party_Authentication, dt_third_party_authentication, dt-third-party-authentication, third-party-authentication-plugin, tp_post_type, and Third Party Authentication Plugin
  * 2. @todo Rename the `disciple-tools-third-party-authentication-plugin.php and menu-and-tabs.php files.
  * 3. @todo Update the README.md and LICENSE
  * 4. @todo Update the default.pot file if you intend to make your plugin multilingual. Use a tool like POEdit
@@ -34,7 +33,7 @@ if (!defined('ABSPATH')) {
 $dt_o365_authentication_required_dt_theme_version = '0.28.0';
 
 /**
- * Gets the instance of the `DT_O365_Authentication_Plugin` class.
+ * Gets the instance of the `DT_Third_Party_Authentication_Plugin` class.
  *
  * @since  0.1
  * @access public
@@ -51,7 +50,7 @@ function dt_third_party_authentication_plugin()
      */
     $is_theme_dt = strpos($wp_theme->get_template(), "disciple-tools-theme") !== false || $wp_theme->name === "Disciple Tools";
     if ($is_theme_dt && version_compare($version, $dt_o365_authentication_required_dt_theme_version, "<")) {
-        add_action('admin_notices', 'dt_o365_authentication_plugin_hook_admin_notice');
+        add_action('admin_notices', 'DT_Third_Party_Authentication_Plugin_hook_admin_notice');
         add_action('wp_ajax_dismissed_notice_handler', 'dt_hook_ajax_notice_handler');
         return false;
     }
@@ -70,15 +69,15 @@ function dt_third_party_authentication_plugin()
     $is_rest = dt_is_rest();
     //@todo change 'sample' if you want the plugin to be set up when using rest api calls other than ones with the 'sample' namespace
     if (!$is_rest) {
-        return DT_O365_Authentication_Plugin::get_instance();
+        return DT_Third_Party_Authentication_Plugin::get_instance();
     }
     // @todo remove this "else if", if not using rest-api.php
     else if (strpos(dt_get_url_path(), 'dt_third_party_authentication_plugin') !== false) {
-        return DT_O365_Authentication_Plugin::get_instance();
+        return DT_Third_Party_Authentication_Plugin::get_instance();
     }
     // @todo remove if not using a post type
-    else if (strpos(dt_get_url_path(), 'third_party_post_type') !== false) {
-        return DT_O365_Authentication_Plugin::get_instance();
+    else if (strpos(dt_get_url_path(), 'tp_post_type') !== false) {
+        return DT_Third_Party_Authentication_Plugin::get_instance();
     }
 }
 add_action('after_setup_theme', 'dt_third_party_authentication_plugin');
@@ -234,7 +233,7 @@ if (isset($_GET['code']) && isset($_GET['state']) && $_GET['state'] === "dt_thir
  * @since  0.1
  * @access public
  */
-class DT_O365_Authentication_Plugin
+class DT_Third_Party_Authentication_Plugin
 {
 
     /**
@@ -664,10 +663,10 @@ class DT_O365_Authentication_Plugin
 // end main plugin class
 
 // Register activation hook.
-register_activation_hook(__FILE__, ['DT_O365_Authentication_Plugin', 'activation']);
-register_deactivation_hook(__FILE__, ['DT_O365_Authentication_Plugin', 'deactivation']);
+register_activation_hook(__FILE__, ['DT_Third_Party_Authentication_Plugin', 'activation']);
+register_deactivation_hook(__FILE__, ['DT_Third_Party_Authentication_Plugin', 'deactivation']);
 
-function dt_o365_authentication_plugin_hook_admin_notice()
+function DT_Third_Party_Authentication_Plugin_hook_admin_notice()
 {
     global $dt_o365_authentication_required_dt_theme_version;
     $wp_theme = wp_get_theme();
