@@ -30,7 +30,7 @@
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
-$dt_o365_authentication_required_dt_theme_version = '0.28.0';
+$dt_third_party_authentication_required_dt_theme_version = '0.28.0';
 
 /**
  * Gets the instance of the `DT_Third_Party_Authentication_Plugin` class.
@@ -41,7 +41,7 @@ $dt_o365_authentication_required_dt_theme_version = '0.28.0';
  */
 function dt_third_party_authentication_plugin()
 {
-    global $dt_o365_authentication_required_dt_theme_version;
+    global $dt_third_party_authentication_required_dt_theme_version;
     $wp_theme = wp_get_theme();
     $version = $wp_theme->version;
 
@@ -49,7 +49,7 @@ function dt_third_party_authentication_plugin()
      * Check if the Disciple.Tools theme is loaded and is the latest required version
      */
     $is_theme_dt = strpos($wp_theme->get_template(), "disciple-tools-theme") !== false || $wp_theme->name === "Disciple Tools";
-    if ($is_theme_dt && version_compare($version, $dt_o365_authentication_required_dt_theme_version, "<")) {
+    if ($is_theme_dt && version_compare($version, $dt_third_party_authentication_required_dt_theme_version, "<")) {
         add_action('admin_notices', 'DT_Third_Party_Authentication_Plugin_hook_admin_notice');
         add_action('wp_ajax_dismissed_notice_handler', 'dt_hook_ajax_notice_handler');
         return false;
@@ -668,12 +668,12 @@ register_deactivation_hook(__FILE__, ['DT_Third_Party_Authentication_Plugin', 'd
 
 function DT_Third_Party_Authentication_Plugin_hook_admin_notice()
 {
-    global $dt_o365_authentication_required_dt_theme_version;
+    global $dt_third_party_authentication_required_dt_theme_version;
     $wp_theme = wp_get_theme();
     $current_version = $wp_theme->version;
     $message = __("'Disciple Tools - Third Party Authentication Plugin' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_third_party_authentication_plugin");
     if ($wp_theme->get_template() === "disciple-tools-theme") {
-        $message .= sprintf(esc_html__('Current Disciple Tools version: %1$s, required version: %2$s', 'dt_third_party_authentication_plugin'), esc_html($current_version), esc_html($dt_o365_authentication_required_dt_theme_version));
+        $message .= sprintf(esc_html__('Current Disciple Tools version: %1$s, required version: %2$s', 'dt_third_party_authentication_plugin'), esc_html($current_version), esc_html($dt_third_party_authentication_required_dt_theme_version));
     }
     // Check if it's been dismissed...
     if (!get_option('dismissed-dt-third-party-authentication', false)) {?>

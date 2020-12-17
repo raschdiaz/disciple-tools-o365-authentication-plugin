@@ -1,6 +1,6 @@
 <?php
 
-class DT_O365_Authentication_Post_Type {
+class DT_Third_Party_Authentication_Post_Type {
 
     // Setup post type naming
     public $post_type = 'tp_post_type';
@@ -452,4 +452,4 @@ class DT_O365_Authentication_Post_Type {
         return $fields;
     }
 }
-DT_O365_Authentication_Post_Type::instance();
+DT_Third_Party_Authentication_Post_Type::instance();
