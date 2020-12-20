@@ -421,6 +421,7 @@ class DT_Third_Party_Authentication_Plugin
         $settings = [
             "client_id" => "",
             "client_secret" => "",
+            "logout_microsoft" => "0",
             "scopes" => "user.read,offline_access",
             "redirect_uri" => wp_login_url(),
             "authorize_uri" => "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
@@ -465,6 +466,7 @@ class DT_Third_Party_Authentication_Plugin
                 wp_enqueue_script('set-user-session', plugin_dir_url(__FILE__) . 'includes/js/set-user-session.js', array('jquery'), false, true);
                 wp_localize_script('set-user-session', 'userSettings', array(
                     'user_logged_in_o365' => true,
+                    'logout_microsoft' => $settings->logout_microsoft,
                     'user_logout_uri' => $settings->user_logout_uri,
                     'home_url' => home_url(),
                 ));
@@ -567,7 +569,7 @@ class DT_Third_Party_Authentication_Plugin
     {
         ?>
             <script>
-                if('user_logged_in_o365' in localStorage) {
+                if('user_logged_in_o365' in localStorage && 'logout_microsoft' in localStorage && localStorage.logout_microsoft == "1") {
                     var link = document.createElement("a");
                     link.href = localStorage.user_logout_uri;
                     link.target = "_blank";

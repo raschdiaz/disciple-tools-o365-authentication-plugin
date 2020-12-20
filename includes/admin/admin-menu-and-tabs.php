@@ -137,7 +137,8 @@ class DT_O365_Authentication_Tab_Microsoft_Azure
 			$settings = json_decode(get_option('dt_o365_settings'));
 
 			$settings->client_id = sanitize_text_field($_POST['clientId']);
-			$settings->client_secret = sanitize_text_field($_POST['clientSecret']);
+            $settings->client_secret = sanitize_text_field($_POST['clientSecret']);
+            $settings->logout_microsoft = sanitize_text_field($_POST['logoutMicrosoft']);
 			
 			update_option('dt_o365_settings', json_encode($settings));
 
@@ -155,7 +156,7 @@ class DT_O365_Authentication_Tab_Microsoft_Azure
 							<table class="widefat striped" style="width: 80%;">
 								<thead>
 									<tr>
-										<th colspan="1">API Credentials</th>
+										<th colspan="1">Settings</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -178,6 +179,15 @@ class DT_O365_Authentication_Tab_Microsoft_Azure
 															</td>
 															<td>
 																<input type="text" name="clientSecret" required value="<?php echo ($dtTpSettings->client_secret) ? $dtTpSettings->client_secret : '' ?>" style="width: 100%">
+															</td>
+														</tr>
+                                                        <tr>
+															<td style="vertical-align: middle; width: 25%;">
+																<label for="tile-select">Disconnect user's microsoft account on disconnect:</label>
+															</td>
+															<td>
+                                                                <input type="radio" name="logoutMicrosoft" value="1" id="logoutMicrosoft1" <?php echo ($dtTpSettings->logout_microsoft == "1") ? 'checked="checked"' : '' ?>> <label for="logoutMicrosoft1">Yes</label></br>
+                                                                <input type="radio" name="logoutMicrosoft" value="0" id="logoutMicrosoft0" <?php echo ($dtTpSettings->logout_microsoft == "0") ? 'checked="checked"' : '' ?>> <label for="logoutMicrosoft0">No</label>
 															</td>
 														</tr>
 													</tbody>
