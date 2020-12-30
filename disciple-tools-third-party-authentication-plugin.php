@@ -321,13 +321,13 @@ class DT_Third_Party_Authentication_Plugin
         $this->version = '0.1';
 
         // sample rest api class
-        require_once 'includes/rest-api.php';
+        //require_once 'includes/rest-api.php';
 
         // sample post type class
-        require_once 'includes/post-type.php';
+        //require_once 'includes/post-type.php';
 
         // custom site to site links
-        require_once 'includes/custom-site-to-site-links.php';
+        //require_once 'includes/custom-site-to-site-links.php';
     }
 
     /**
